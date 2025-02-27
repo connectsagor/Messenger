@@ -19,3 +19,7 @@
 .input-field:focus {
   outline: none;
 }
+
+.logo {
+  color: #2973b2;
+}
