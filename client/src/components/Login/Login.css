@@ -1,0 +1,21 @@
+.login {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.main-bg {
+  background-color: #2973b2;
+}
+
+.input-field {
+  width: 100%;
+  border: 1px solid rgba(41, 114, 178, 0.226);
+  border-radius: 5px;
+}
+
+.input-field:focus {
+  outline: none;
+}
