@@ -36,11 +36,29 @@ const UsersSchema = new mongoose.Schema({
 });
 const Users = mongoose.model("Users", UsersSchema);
 
-app.post("/api/users", async (req, res) => {
+app.post("/api/create-users", async (req, res) => {
   const userData = req.body;
-  const user = Users.create(userData);
+  const user = await Users.create(userData);
   res.status(200).json({
     message: "User created successfully",
+    user: user,
+  });
+});
+
+app.get("/api/get-users", async (req, res) => {
+  const ALlUsers = await Users.find({});
+  res.status(200).json({
+    message: "Users fetched successfully",
+    user: ALlUsers,
+  });
+});
+
+app.get("/api/get-user", async (req, res) => {
+  const userId = req.query.id;
+  const user = await Users.find({ uid: userId });
+
+  res.status(200).json({
+    message: "User fetched successfully",
     user: user,
   });
 });

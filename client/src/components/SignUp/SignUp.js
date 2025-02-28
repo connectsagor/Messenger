@@ -29,7 +29,7 @@ const SignUp = () => {
         setIsLoggedIn(true);
         sessionStorage.setItem("user", JSON.stringify(user));
 
-        fetch("http://localhost:5000/api/users", {
+        fetch("http://localhost:5000/api/create-users", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

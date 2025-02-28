@@ -1,0 +1,30 @@
+.height-full {
+  height: 80vh;
+}
+
+.chat-box {
+  position: relative;
+}
+.chat-messages {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.chat-messages input {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+}
+.chat-messages input:focus {
+  outline: none;
+}
+.chat-messages button {
+  border: none;
+  border-radius: 5px;
+}
