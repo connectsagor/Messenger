@@ -7,7 +7,7 @@
 }
 .chat-messages {
   position: absolute;
-  bottom: 10px;
+
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -27,4 +27,32 @@
 .chat-messages button {
   border: none;
   border-radius: 5px;
+}
+.messages-container {
+  overflow-y: auto;
+  height: 50vh;
+}
+
+.message {
+  max-width: 100%;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  word-wrap: break-word;
+}
+
+.sent {
+  background-color: #315e33;
+  color: white;
+  align-self: flex-end;
+  text-align: right;
+  border-radius: 15px 15px 0 15px;
+}
+
+.received {
+  background-color: #e0e0e0;
+  color: black;
+  align-self: flex-start;
+  text-align: left;
+  border-radius: 15px 15px 15px 0;
 }

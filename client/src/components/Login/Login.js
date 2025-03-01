@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import { Chat } from "react-bootstrap-icons";
+
 import "./Login.css";
 import { Link, useNavigate } from "react-router";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
@@ -20,12 +21,12 @@ const Login = () => {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        sessionStorage.setItem("isLoggedIn", true);
+        sessionStorage.setItem("user", JSON.stringify(user));
         setIsLoggedIn(true);
         navigate("/");
       })
       .catch((error) => {
-        setIsLoggedIn(true);
+        setIsLoggedIn(false);
 
         const errorCode = error.code;
         const errorMessage = error.message;
