@@ -160,11 +160,12 @@ const Profile = () => {
                   <ScrollToBottom className="messages-container">
                     {messages && messages.length > 0 ? (
                       messages.map((message, index) => {
+                        console.log("message", message);
                         return (
                           <div
                             key={index}
                             className={`message ${
-                              message.sender === currentUserId
+                              message.senderId === currentUserId
                                 ? "sent"
                                 : "received"
                             }`}
