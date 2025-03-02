@@ -8,51 +8,63 @@ let socket;
 const Profile = () => {
   const [allUser, setAllUser] = useState(null);
   const [chatUser, setChatUser] = useState(null);
-  const [loggedInUser, setLoggedInUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
 
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
   const currentUserId = loggedInuserNow.uid;
 
+  // useEffect(() => {
+  //   socket = io("http://localhost:5000");
+  //   socket.on("message", (data) => {
+  //     setMessages((prevMessages) => [...prevMessages, data]);
+  //   });
+
+  //   return () => {
+  //     socket.off("message", messages);
+  //     socket.disconnect();
+  //   };
+  // }, [messages]);
+
   useEffect(() => {
     socket = io("http://localhost:5000");
+    // Register user when component loads
+    socket.emit("registerUser", currentUserId);
 
-    const handleMessage = (data) => {
-      if (data.sender !== currentUserId) {
-        // Avoid adding the sender's own message
-        setMessages((prevMessages) => [...prevMessages, data]);
-      }
-    };
-
-    socket.on("message", handleMessage);
+    // Listen for incoming messages
+    socket.on("receiveMessage", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
 
     return () => {
-      socket.off("message", handleMessage);
-      socket.disconnect();
+      socket.off("receiveMessage");
     };
   }, [currentUserId]);
 
-  console.log("messages", messages);
+  // const sendMessage = () => {
+  //   if (messageInput.trim() === "") return;
 
-  useEffect(() => {
-    fetch("http://localhost:5000/api/get-users?currentUserId=" + currentUserId)
-      .then((res) => res.json())
-      .then((data) => {
-        setAllUser(data.user);
-      });
-  }, []);
+  //   const messageData = { text: messageInput, sender: currentUserId };
 
-  const sendMessage = () => {
+  //   socket.emit("message", messageData);
+  //   // setMessages((prevMessages) => [...prevMessages, messageData]);
+
+  //   setMessageInput("");
+  // };
+
+  const sendMessage = (id) => {
+    console.log("id", id);
     if (messageInput.trim() === "") return;
 
-    const messageData = { text: messageInput, sender: currentUserId };
-
-    socket.emit("message", messageData);
-    setMessages((prevMessages) => [...prevMessages, messageData]);
-
+    socket.emit("sendMessage", {
+      senderId: currentUserId,
+      receiverId: id,
+      text: messageInput,
+    });
     setMessageInput("");
   };
+
+  console.log("messages", messages);
 
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
@@ -62,6 +74,13 @@ const Profile = () => {
       });
   };
 
+  useEffect(() => {
+    fetch("http://localhost:5000/api/get-users?currentUserId=" + currentUserId)
+      .then((res) => res.json())
+      .then((data) => {
+        setAllUser(data.user);
+      });
+  }, []);
   return (
     <div className="profile">
       <div className="container">
@@ -93,9 +112,10 @@ const Profile = () => {
             <div className="user-chat">
               <div className="all-chat-user shadow-lg p-3 height-full">
                 {allUser &&
-                  allUser.map((user) => {
+                  allUser.map((user, index) => {
                     return (
                       <div
+                        key={index}
                         onClick={() => handleGetUser(user.uid)}
                         className="users d-flex gap-3 my-4"
                       >
@@ -122,14 +142,14 @@ const Profile = () => {
                 {chatUser && (
                   <div className="chat-header">
                     <div className="user-chat-box-img">
-                      {chatUser[0].photo ? (
-                        <img src={chatUser[0].photo} alt="user" />
+                      {chatUser[0]?.photo ? (
+                        <img src={chatUser[0]?.photo} alt="user" />
                       ) : (
                         <PersonCircle className="m-0 display-6" />
                       )}
                     </div>
                     <div className="user-chat-info">
-                      <h5 className="m-0">{chatUser[0].name}</h5>
+                      <h5 className="m-0">{chatUser[0]?.name}</h5>
                       <p>Online</p>
                     </div>
                   </div>
@@ -160,27 +180,29 @@ const Profile = () => {
                 </div>
               </div>
               <div className="bottom-box">
-                <div className=" px-3 d-flex gap-3">
-                  <div className="sms-box">
-                    <div className="message"></div>
+                {chatUser && (
+                  <div className=" px-3 d-flex gap-3">
+                    <div className="sms-box">
+                      <div className="message"></div>
+                    </div>
+                    <div className="chat-messages mt-4 ">
+                      <input
+                        className="py-2 px-3 border-1"
+                        type="text"
+                        name="message"
+                        placeholder="Type a message"
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        value={messageInput}
+                      />
+                      <button
+                        onClick={() => sendMessage(chatUser[0].uid)}
+                        className="main-bg py-2 px-3 border-0"
+                      >
+                        Send
+                      </button>
+                    </div>
                   </div>
-                  <div className="chat-messages mt-4 ">
-                    <input
-                      className="py-2 px-3 border-1"
-                      type="text"
-                      name="message"
-                      placeholder="Type a message"
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      value={messageInput}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      className="main-bg py-2 px-3 border-0"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

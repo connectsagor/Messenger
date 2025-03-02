@@ -16,17 +16,40 @@ const io = new Server(server, {
     origin: "http://localhost:3000",
   },
 });
+const userSocketMap = {};
 
 io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
 
-  socket.on("message", (message) => {
-    console.log("Received message:", message);
-    io.emit("message", { text: message.text, sender: message.sender });
+  socket.on("registerUser", (userId) => {
+    userSocketMap[userId] = socket.id;
+
+    console.log("User registered:", userId, "with socket:", socket.id);
   });
 
+  socket.on("sendMessage", ({ senderId, receiverId, text }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+
+    // Send message only to the intended receiver
+    io.to(receiverSocketId).emit("receiveMessage", { senderId, text });
+
+    // Also send message back to the sender
+    io.to(socket.id).emit("receiveMessage", { senderId, text });
+  });
+
+  // socket.on("message", (message) => {
+  //   console.log("Received message:", message);
+  //   io.emit("message", { text: message.text, sender: message.sender });
+  // });
+
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    for (const userId in userSocketMap) {
+      if (userSocketMap[userId] === socket.id) {
+        delete userSocketMap[userId];
+        break;
+      }
+    }
+    console.log("User disconnected:", socket.id);
   });
 });
 
