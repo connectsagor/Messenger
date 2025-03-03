@@ -4,6 +4,8 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 require("dotenv").config();
 const http = require("http");
+const multer = require("multer");
+const path = require("path");
 const app = express();
 const server = http.createServer(app);
 const { Server } = require("socket.io");
@@ -11,6 +13,18 @@ const { Server } = require("socket.io");
 app.use(cors());
 app.use(bodyParser.json());
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + file.originalname;
+    cb(null, file.fieldname + "-" + uniqueSuffix);
+  },
+});
+
+const upload = multer({ storage: storage });
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -84,10 +98,33 @@ app.get("/api/get-users", async (req, res) => {
     .json({ message: "Users fetched successfully", user: ALlUsers });
 });
 
+app.get("/api/get-my-data", async (req, res) => {
+  const currentUserId = req.query.currentUserId;
+  const myData = await Users.find({ uid: currentUserId });
+  res
+    .status(200)
+    .json({ message: "My data fetched successfully", user: myData });
+});
+
 app.get("/api/get-user", async (req, res) => {
   const userId = req.query.id;
   const user = await Users.find({ uid: userId });
   res.status(200).json({ message: "User fetched successfully", user: user });
+});
+
+app.patch("/api/upload-dp", upload.single("file"), async (req, res) => {
+  const userId = req.query.userId;
+  const photoName = req.file.filename;
+
+  const updateUser = await Users.findOneAndUpdate(
+    { uid: userId },
+    { photo: photoName }
+  );
+
+  res.status(501).json({
+    message: "Update user",
+    data: updateUser,
+  });
 });
 
 server.listen(5000, () => {

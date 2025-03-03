@@ -7,7 +7,12 @@
 }
 
 .main-bg {
-  background-color: #2973b2;
+  /* background: #2973b2; */
+  background: linear-gradient(
+    to right,
+    rgba(249, 99, 133, 255),
+    rgba(248, 107, 107, 255)
+  );
 }
 
 .input-field {

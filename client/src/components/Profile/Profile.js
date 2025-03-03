@@ -3,6 +3,8 @@ import { BellSlashFill, Chat, PersonCircle } from "react-bootstrap-icons";
 import ScrollToBottom from "react-scroll-to-bottom";
 import "./Profile.css";
 import io from "socket.io-client";
+import { useNavigate } from "react-router";
+import ProfileInfo from "./ProfileInfo";
 let socket;
 
 const Profile = () => {
@@ -10,9 +12,27 @@ const Profile = () => {
   const [chatUser, setChatUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
-
+  const [myData, setMyData] = useState(null);
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
   const currentUserId = loggedInuserNow.uid;
+
+  const [modalIsOpen, setIsOpen] = React.useState(false);
+
+  function openModal() {
+    setIsOpen(true);
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+  }
+
+  const handleShowProfile = () => {
+    if (modalIsOpen) {
+      closeModal();
+    } else {
+      openModal();
+    }
+  };
 
   // useEffect(() => {
   //   socket = io("http://localhost:5000");
@@ -53,7 +73,6 @@ const Profile = () => {
   // };
 
   const sendMessage = (id) => {
-    console.log("id", id);
     if (messageInput.trim() === "") return;
 
     socket.emit("sendMessage", {
@@ -63,8 +82,6 @@ const Profile = () => {
     });
     setMessageInput("");
   };
-
-  console.log("messages", messages);
 
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
@@ -81,6 +98,17 @@ const Profile = () => {
         setAllUser(data.user);
       });
   }, []);
+
+  useEffect(() => {
+    fetch(
+      "http://localhost:5000/api/get-my-data?currentUserId=" + currentUserId
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setMyData(data.user);
+      });
+  }, []);
+
   return (
     <div className="profile">
       <div className="container">
@@ -91,17 +119,32 @@ const Profile = () => {
             </div>
           </div>
           <div className="col-md-8 p-4">
-            <div className="messages mb-4 d-flex justify-content-center">
+            <div className="messages mb-4 d-flex justify-content-between">
               <h2>Messages</h2>
+
+              {myData &&
+                myData.map((data, index) => {
+                  return <h4 key={index}>Welcome {data.name}!</h4>;
+                })}
             </div>
           </div>
           <div className="col-md-2 p-4">
             <div className="user-profile d-flex gap-4">
-              <BellSlashFill className="display-6" />
-              {false ? (
-                <img src={""} alt="user" />
+              <BellSlashFill
+                onClick={handleShowProfile}
+                className="display-6"
+              />
+              {myData ? (
+                <img
+                  className="display-pic"
+                  src={`http://localhost:5000/uploads/${myData[0].photo}`}
+                  alt="user"
+                />
               ) : (
-                <PersonCircle className="display-6" />
+                <PersonCircle
+                  onClick={handleShowProfile}
+                  className="display-6"
+                />
               )}
             </div>
           </div>
@@ -113,6 +156,7 @@ const Profile = () => {
               <div className="all-chat-user shadow-lg p-3 height-full">
                 {allUser &&
                   allUser.map((user, index) => {
+                    console.log(user);
                     return (
                       <div
                         key={index}
@@ -121,7 +165,10 @@ const Profile = () => {
                       >
                         <div className="user-profile">
                           {user.photo ? (
-                            <img src={user.photo} alt="user" />
+                            <img
+                              src={`http://localhost:5000/uploads/${user.photo}`}
+                              alt="user"
+                            />
                           ) : (
                             <PersonCircle className="m-0 display-6" />
                           )}
@@ -140,10 +187,13 @@ const Profile = () => {
             <div className="chat-box shadow-lg p-3 height-full">
               <div className="top-box user-chat-box shadow-sm ">
                 {chatUser && (
-                  <div className="chat-header">
+                  <div className="chat-header d-flex gap-3">
                     <div className="user-chat-box-img">
                       {chatUser[0]?.photo ? (
-                        <img src={chatUser[0]?.photo} alt="user" />
+                        <img
+                          src={`http://localhost:5000/uploads/${chatUser[0].photo}`}
+                          alt="user"
+                        />
                       ) : (
                         <PersonCircle className="m-0 display-6" />
                       )}
@@ -160,7 +210,6 @@ const Profile = () => {
                   <ScrollToBottom className="messages-container">
                     {messages && messages.length > 0 ? (
                       messages.map((message, index) => {
-                        console.log("message", message);
                         return (
                           <div
                             key={index}
@@ -175,7 +224,7 @@ const Profile = () => {
                         );
                       })
                     ) : (
-                      <p>No messages yet</p>
+                      <p className="text-center">No messages yet</p>
                     )}
                   </ScrollToBottom>
                 </div>
@@ -209,22 +258,31 @@ const Profile = () => {
           </div>
           <div className="col-md-3">
             <div className="user-view d-flex justify-content-center shadow-lg p-3 height-full">
-              {chatUser && (
-                <div className="user-chat-view">
-                  <div className="user-profile mb-3">
-                    {chatUser[0].photo ? (
-                      <img src={chatUser[0].photo} alt="user" />
-                    ) : (
-                      <PersonCircle className="m-0 display-6" />
-                    )}
+              {modalIsOpen ? (
+                <ProfileInfo
+                  openModal={openModal}
+                  closeModal={closeModal}
+                  modalIsOpen={modalIsOpen}
+                  myData={myData}
+                />
+              ) : (
+                chatUser && (
+                  <div className="user-chat-view">
+                    <div className="user-profile mb-3">
+                      {chatUser[0].photo ? (
+                        <img src={chatUser[0].photo} alt="user" />
+                      ) : (
+                        <PersonCircle className="m-0 display-6" />
+                      )}
+                    </div>
+                    <div className="user-info">
+                      <h6 className="m-0">{chatUser[0].name}</h6>
+                      <p>{chatUser[0].bio}</p>
+                      <p>{chatUser[0].location}</p>
+                      <p>{chatUser[0].phone}</p>
+                    </div>
                   </div>
-                  <div className="user-info">
-                    <h6 className="m-0">{chatUser[0].name}</h6>
-                    <p>{chatUser[0].bio}</p>
-                    <p>{chatUser[0].location}</p>
-                    <p>{chatUser[0].phone}</p>
-                  </div>
-                </div>
+                )
               )}
             </div>
           </div>
