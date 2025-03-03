@@ -77,9 +77,9 @@ const UsersSchema = new mongoose.Schema({
   email: String,
   uid: String,
   photo: { type: String, default: "" },
-  bio: { type: String, default: "" },
-  location: { type: String, default: "" },
-  phone: { type: String, default: "" },
+  bio: String,
+  location: String,
+  phone: String,
 });
 
 const Users = mongoose.model("Users", UsersSchema);

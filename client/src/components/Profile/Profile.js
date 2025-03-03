@@ -5,14 +5,16 @@ import "./Profile.css";
 import io from "socket.io-client";
 import { useNavigate } from "react-router";
 import ProfileInfo from "./ProfileInfo";
+
 let socket;
 
 const Profile = () => {
+  const [myData, setMyData] = useState(null);
   const [allUser, setAllUser] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
-  const [myData, setMyData] = useState(null);
+
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
   const currentUserId = loggedInuserNow.uid;
 
@@ -130,14 +132,12 @@ const Profile = () => {
           </div>
           <div className="col-md-2 p-4">
             <div className="user-profile d-flex gap-4">
-              <BellSlashFill
-                onClick={handleShowProfile}
-                className="display-6"
-              />
+              <BellSlashFill className="display-6" />
               {myData ? (
                 <img
+                  onClick={handleShowProfile}
                   className="display-pic"
-                  src={`http://localhost:5000/uploads/${myData[0].photo}`}
+                  src={`http://localhost:5000/uploads/${myData[0]?.photo}`}
                   alt="user"
                 />
               ) : (
@@ -166,6 +166,7 @@ const Profile = () => {
                         <div className="user-profile">
                           {user.photo ? (
                             <img
+                              className="display-pic"
                               src={`http://localhost:5000/uploads/${user.photo}`}
                               alt="user"
                             />
@@ -191,6 +192,7 @@ const Profile = () => {
                     <div className="user-chat-box-img">
                       {chatUser[0]?.photo ? (
                         <img
+                          className="display-pic"
                           src={`http://localhost:5000/uploads/${chatUser[0].photo}`}
                           alt="user"
                         />
@@ -270,7 +272,11 @@ const Profile = () => {
                   <div className="user-chat-view">
                     <div className="user-profile mb-3">
                       {chatUser[0].photo ? (
-                        <img src={chatUser[0].photo} alt="user" />
+                        <img
+                          className="display-pic"
+                          src={`http://localhost:5000/uploads/${chatUser[0].photo}`}
+                          alt="user"
+                        />
                       ) : (
                         <PersonCircle className="m-0 display-6" />
                       )}

@@ -11,7 +11,10 @@ const SignUp = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [location, setLocation] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -38,6 +41,9 @@ const SignUp = () => {
             name,
             email,
             uid: user.uid,
+            bio,
+            location,
+            phone,
           }),
         })
           .then((res) => res.json())
@@ -71,6 +77,27 @@ const SignUp = () => {
           className="py-2 px-3 border-1 input-field"
           type="email"
           placeholder="Email"
+        />
+        <input
+          onChange={(e) => setPhone(e.target.value)}
+          value={phone}
+          className="py-2 px-3 border-1 input-field"
+          type="text"
+          placeholder="Phone"
+        />
+        <input
+          onChange={(e) => setBio(e.target.value)}
+          value={bio}
+          className="py-2 px-3 border-1 input-field"
+          type="text"
+          placeholder="Bio"
+        />
+        <input
+          onChange={(e) => setLocation(e.target.value)}
+          value={location}
+          className="py-2 px-3 border-1 input-field"
+          type="text"
+          placeholder="City"
         />
         <input
           onChange={(e) => setPassword(e.target.value)}

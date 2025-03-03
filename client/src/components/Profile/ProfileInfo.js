@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { X, XCircle, PersonCircle } from "react-bootstrap-icons";
 
 import ReactDOM from "react-dom";
 import Modal from "react-modal";
+import { UserContext } from "../../App";
 
 const customStyles = {
   content: {
@@ -18,6 +19,10 @@ const customStyles = {
 Modal.setAppElement("#root");
 
 const ProfileInfo = ({ openModal, closeModal, modalIsOpen, myData }) => {
+  //   const UserContextData = useContext(UserContext);
+
+  //   const { myData, setMyData } = UserContextData[2];
+
   const [imageDP, setImageDP] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -65,7 +70,13 @@ const ProfileInfo = ({ openModal, closeModal, modalIsOpen, myData }) => {
                 className="hidden"
                 onChange={(e) => handleFileChange(e)}
               />
-              {imageDP ? (
+              {myData[0].photo ? (
+                <img
+                  src={`http://localhost:5000/uploads/${myData[0].photo}`}
+                  alt="profile"
+                  className="display-pic rounded-full "
+                />
+              ) : imageDP ? (
                 <img
                   src={imagePreview}
                   alt="profile"
