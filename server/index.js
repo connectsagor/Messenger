@@ -30,40 +30,58 @@ const io = new Server(server, {
     origin: "http://localhost:3000",
   },
 });
-const userSocketMap = {};
+// const userSocketMap = {};
+
+// io.on("connection", (socket) => {
+//   console.log("a user connected", socket.id);
+
+//   socket.on("registerUser", (userId) => {
+//     userSocketMap[userId] = socket.id;
+
+//     console.log("User registered:", userId, "with socket:", socket.id);
+//   });
+
+//   socket.on("sendMessage", ({ senderId, receiverId, text }) => {
+//     const receiverSocketId = userSocketMap[receiverId];
+
+//     // Send message only to the intended receiver
+//     io.to(receiverSocketId).emit("receiveMessage", { senderId, text });
+
+//     // Also send message back to the sender
+//     io.to(socket.id).emit("receiveMessage", { senderId, text });
+//   });
+
+//   // socket.on("message", (message) => {
+//   //   console.log("Received message:", message);
+//   //   io.emit("message", { text: message.text, sender: message.sender });
+//   // });
+
+//   socket.on("disconnect", () => {
+//     for (const userId in userSocketMap) {
+//       if (userSocketMap[userId] === socket.id) {
+//         delete userSocketMap[userId];
+//         break;
+//       }
+//     }
+//     console.log("User disconnected:", socket.id);
+//   });
+// });
+
+// Socket Io
 
 io.on("connection", (socket) => {
-  console.log("a user connected", socket.id);
+  console.log("User connected:", socket.id);
 
-  socket.on("registerUser", (userId) => {
-    userSocketMap[userId] = socket.id;
-
-    console.log("User registered:", userId, "with socket:", socket.id);
+  socket.on("joinChat", (chatId) => {
+    socket.join(chatId);
   });
 
-  socket.on("sendMessage", ({ senderId, receiverId, text }) => {
-    const receiverSocketId = userSocketMap[receiverId];
-
-    // Send message only to the intended receiver
-    io.to(receiverSocketId).emit("receiveMessage", { senderId, text });
-
-    // Also send message back to the sender
-    io.to(socket.id).emit("receiveMessage", { senderId, text });
+  socket.on("sendMessage", (message) => {
+    io.to(message.chat).emit("receiveMessage", message);
   });
-
-  // socket.on("message", (message) => {
-  //   console.log("Received message:", message);
-  //   io.emit("message", { text: message.text, sender: message.sender });
-  // });
 
   socket.on("disconnect", () => {
-    for (const userId in userSocketMap) {
-      if (userSocketMap[userId] === socket.id) {
-        delete userSocketMap[userId];
-        break;
-      }
-    }
-    console.log("User disconnected:", socket.id);
+    console.log("User disconnected");
   });
 });
 
@@ -72,27 +90,51 @@ mongoose.connect(process.env.URI, {
   useUnifiedTopology: true,
 });
 
-const UsersSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  uid: String,
-  photo: { type: String, default: "" },
-  bio: String,
-  location: String,
-  phone: String,
-});
+const UserSchema = new mongoose.Schema(
+  {
+    name: String,
+    email: String,
+    uid: String,
+    photo: { type: String, default: "" },
+    bio: String,
+    location: String,
+    phone: String,
+  },
+  { timestamps: true }
+);
 
-const Users = mongoose.model("Users", UsersSchema);
+const chatSchema = new mongoose.Schema(
+  {
+    isGroupChat: { type: Boolean, default: false },
+    users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
+    groupName: { type: String, default: null },
+  },
+  { timestamps: true }
+);
+
+const messageSchema = new mongoose.Schema(
+  {
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    content: String,
+    chat: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
+  },
+  { timestamps: true }
+);
+
+const User = mongoose.model("User", UserSchema);
+const Chat = mongoose.model("Chat", chatSchema);
+const Message = mongoose.model("Message", messageSchema);
 
 app.post("/api/create-users", async (req, res) => {
   const userData = req.body;
-  const user = await Users.create(userData);
+  const user = await User.create(userData);
   res.status(200).json({ message: "User created successfully", user: user });
 });
 
 app.get("/api/get-users", async (req, res) => {
   const currentUserId = req.query.currentUserId;
-  const ALlUsers = await Users.find({ uid: { $ne: currentUserId } });
+  const ALlUsers = await User.find({ uid: { $ne: currentUserId } });
   res
     .status(200)
     .json({ message: "Users fetched successfully", user: ALlUsers });
@@ -100,15 +142,15 @@ app.get("/api/get-users", async (req, res) => {
 
 app.get("/api/get-my-data", async (req, res) => {
   const currentUserId = req.query.currentUserId;
-  const myData = await Users.find({ uid: currentUserId });
+  const myData = await User.find({ uid: currentUserId });
   res
     .status(200)
     .json({ message: "My data fetched successfully", user: myData });
 });
 
 app.get("/api/get-user", async (req, res) => {
-  const userId = req.query.id;
-  const user = await Users.find({ uid: userId });
+  const id = req.query.id;
+  const user = await User.find({ _id: id });
   res.status(200).json({ message: "User fetched successfully", user: user });
 });
 
@@ -116,7 +158,7 @@ app.patch("/api/upload-dp", upload.single("file"), async (req, res) => {
   const userId = req.query.userId;
   const photoName = req.file.filename;
 
-  const updateUser = await Users.findOneAndUpdate(
+  const updateUser = await User.findOneAndUpdate(
     { uid: userId },
     { photo: photoName }
   );
@@ -125,6 +167,46 @@ app.patch("/api/upload-dp", upload.single("file"), async (req, res) => {
     message: "Update user",
     data: updateUser,
   });
+});
+
+//One to One chat
+
+app.post("/api/one-to-one", async (req, res) => {
+  const { user1, user2 } = req.body;
+
+  let chat = await Chat.findOne({
+    isGroupChat: false,
+    users: { $all: [user1, user2] },
+  });
+
+  if (!chat) {
+    chat = await Chat.create({ users: [user1, user2], isGroupChat: false });
+  }
+
+  res.json(chat);
+});
+
+//Group chat
+
+app.post("/group", async (req, res) => {
+  const { users, groupName } = req.body;
+
+  const chat = await Chat.create({ users, groupName, isGroupChat: true });
+  res.json(chat);
+});
+
+//Send Message
+app.post("/api/chat/message", async (req, res) => {
+  const { sender, content, chatId } = req.body;
+
+  const message = await Message.create({ sender, content, chat: chatId });
+  await Chat.findByIdAndUpdate(
+    chatId,
+    { $push: { messages: message._id } },
+    { new: true, useFindAndModify: false }
+  );
+
+  res.json(message);
 });
 
 server.listen(5000, () => {

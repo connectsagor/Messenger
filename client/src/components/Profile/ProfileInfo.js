@@ -36,7 +36,8 @@ const ProfileInfo = ({ openModal, closeModal, modalIsOpen, myData }) => {
   };
 
   const handleUpdateInfo = async (id) => {
-    console.log(id);
+    if (!imagePreview) return;
+
     const profilePic = new FormData();
     profilePic.append("file", imageDP);
 

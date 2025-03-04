@@ -5,16 +5,17 @@ import "./Profile.css";
 import io from "socket.io-client";
 import { useNavigate } from "react-router";
 import ProfileInfo from "./ProfileInfo";
-
-let socket;
+import axios from "axios";
+import socket from "../../socket";
 
 const Profile = () => {
   const [myData, setMyData] = useState(null);
   const [allUser, setAllUser] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState("");
   const [messageInput, setMessageInput] = useState("");
-
+  const [chatId, setChatId] = useState("");
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
   const currentUserId = loggedInuserNow.uid;
 
@@ -38,52 +39,18 @@ const Profile = () => {
 
   // useEffect(() => {
   //   socket = io("http://localhost:5000");
-  //   socket.on("message", (data) => {
-  //     setMessages((prevMessages) => [...prevMessages, data]);
+  //   // Register user when component loads
+  //   socket.emit("registerUser", currentUserId);
+
+  //   // Listen for incoming messages
+  //   socket.on("receiveMessage", (data) => {
+  //     setMessages((prev) => [...prev, data]);
   //   });
 
   //   return () => {
-  //     socket.off("message", messages);
-  //     socket.disconnect();
+  //     socket.off("receiveMessage");
   //   };
-  // }, [messages]);
-
-  useEffect(() => {
-    socket = io("http://localhost:5000");
-    // Register user when component loads
-    socket.emit("registerUser", currentUserId);
-
-    // Listen for incoming messages
-    socket.on("receiveMessage", (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
-
-    return () => {
-      socket.off("receiveMessage");
-    };
-  }, [currentUserId]);
-
-  // const sendMessage = () => {
-  //   if (messageInput.trim() === "") return;
-
-  //   const messageData = { text: messageInput, sender: currentUserId };
-
-  //   socket.emit("message", messageData);
-  //   // setMessages((prevMessages) => [...prevMessages, messageData]);
-
-  //   setMessageInput("");
-  // };
-
-  const sendMessage = (id) => {
-    if (messageInput.trim() === "") return;
-
-    socket.emit("sendMessage", {
-      senderId: currentUserId,
-      receiverId: id,
-      text: messageInput,
-    });
-    setMessageInput("");
-  };
+  // }, [currentUserId]);
 
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
@@ -92,6 +59,30 @@ const Profile = () => {
         setChatUser(data.user);
       });
   };
+
+  useEffect(() => {
+    const chatId = chatUser?.map((chatU) => chatU.uid);
+    socket.emit("joinChat", chatId);
+
+    socket.on("receiveMessage", (newMessage) => {
+      setMessages((prev) => [...prev, newMessage]);
+    });
+
+    return () => {
+      socket.off("receiveMessage");
+    };
+  }, [chatUser]);
+
+  // const sendMessage = (id) => {
+  //   if (messageInput.trim() === "") return;
+
+  //   socket.emit("sendMessage", {
+  //     senderId: currentUserId,
+  //     receiverId: id,
+  //     text: messageInput,
+  //   });
+  //   setMessageInput("");
+  // };
 
   useEffect(() => {
     fetch("http://localhost:5000/api/get-users?currentUserId=" + currentUserId)
@@ -110,6 +101,30 @@ const Profile = () => {
         setMyData(data.user);
       });
   }, []);
+
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+
+    const newMessage = {
+      sender: myData[0]?._id,
+      content: message,
+      chatId: chatId,
+    };
+    await axios.post("http://localhost:5000/api/chat/message", newMessage);
+
+    socket.emit("sendMessage", newMessage);
+    setMessages((prev) => [...prev, newMessage]);
+    setMessage("");
+  };
+
+  const handleCreateChat = async (user1, user2) => {
+    handleGetUser(user2);
+    const response = await axios.post("http://localhost:5000/api/one-to-one", {
+      user1,
+      user2,
+    });
+    setChatId(response.data._id);
+  };
 
   return (
     <div className="profile">
@@ -160,7 +175,9 @@ const Profile = () => {
                     return (
                       <div
                         key={index}
-                        onClick={() => handleGetUser(user.uid)}
+                        onClick={() =>
+                          handleCreateChat(myData[0]._id, user._id)
+                        }
                         className="users d-flex gap-3 my-4"
                       >
                         <div className="user-profile">
@@ -193,7 +210,7 @@ const Profile = () => {
                       {chatUser[0]?.photo ? (
                         <img
                           className="display-pic"
-                          src={`http://localhost:5000/uploads/${chatUser[0].photo}`}
+                          src={`http://localhost:5000/uploads/${chatUser[0]?.photo}`}
                           alt="user"
                         />
                       ) : (
@@ -221,7 +238,7 @@ const Profile = () => {
                                 : "received"
                             }`}
                           >
-                            <p>{message.text}</p>
+                            <p>{message.content}</p>
                           </div>
                         );
                       })
@@ -243,11 +260,11 @@ const Profile = () => {
                         type="text"
                         name="message"
                         placeholder="Type a message"
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        value={messageInput}
+                        onChange={(e) => setMessage(e.target.value)}
+                        value={message}
                       />
                       <button
-                        onClick={() => sendMessage(chatUser[0].uid)}
+                        onClick={sendMessage}
                         className="main-bg py-2 px-3 border-0"
                       >
                         Send
@@ -271,10 +288,10 @@ const Profile = () => {
                 chatUser && (
                   <div className="user-chat-view">
                     <div className="user-profile mb-3">
-                      {chatUser[0].photo ? (
+                      {chatUser[0]?.photo ? (
                         <img
                           className="display-pic"
-                          src={`http://localhost:5000/uploads/${chatUser[0].photo}`}
+                          src={`http://localhost:5000/uploads/${chatUser[0]?.photo}`}
                           alt="user"
                         />
                       ) : (
@@ -282,10 +299,10 @@ const Profile = () => {
                       )}
                     </div>
                     <div className="user-info">
-                      <h6 className="m-0">{chatUser[0].name}</h6>
-                      <p>{chatUser[0].bio}</p>
-                      <p>{chatUser[0].location}</p>
-                      <p>{chatUser[0].phone}</p>
+                      <h6 className="m-0">{chatUser[0]?.name}</h6>
+                      <p>{chatUser[0]?.bio}</p>
+                      <p>{chatUser[0]?.location}</p>
+                      <p>{chatUser[0]?.phone}</p>
                     </div>
                   </div>
                 )

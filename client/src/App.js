@@ -5,6 +5,7 @@ import SignUp from "./components/SignUp/SignUp";
 import { initializeApp } from "firebase/app";
 import { createContext, useEffect, useState } from "react";
 import Profile from "./components/Profile/Profile";
+import Chat from "./components/Chat/Chat";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
