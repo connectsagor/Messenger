@@ -25,63 +25,33 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3000", // Allow frontend to connect
+    methods: ["GET", "POST"],
   },
 });
-// const userSocketMap = {};
-
-// io.on("connection", (socket) => {
-//   console.log("a user connected", socket.id);
-
-//   socket.on("registerUser", (userId) => {
-//     userSocketMap[userId] = socket.id;
-
-//     console.log("User registered:", userId, "with socket:", socket.id);
-//   });
-
-//   socket.on("sendMessage", ({ senderId, receiverId, text }) => {
-//     const receiverSocketId = userSocketMap[receiverId];
-
-//     // Send message only to the intended receiver
-//     io.to(receiverSocketId).emit("receiveMessage", { senderId, text });
-
-//     // Also send message back to the sender
-//     io.to(socket.id).emit("receiveMessage", { senderId, text });
-//   });
-
-//   // socket.on("message", (message) => {
-//   //   console.log("Received message:", message);
-//   //   io.emit("message", { text: message.text, sender: message.sender });
-//   // });
-
-//   socket.on("disconnect", () => {
-//     for (const userId in userSocketMap) {
-//       if (userSocketMap[userId] === socket.id) {
-//         delete userSocketMap[userId];
-//         break;
-//       }
-//     }
-//     console.log("User disconnected:", socket.id);
-//   });
-// });
-
-// Socket Io
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log(`User Connected: ${socket.id}`);
 
+  // User joins a chat room
   socket.on("joinChat", (chatId) => {
     socket.join(chatId);
+    console.log(`User joined chat: ${chatId}`);
   });
 
+  // When a message is sent
   socket.on("sendMessage", (message) => {
-    io.to(message.chat).emit("receiveMessage", message);
+    console.log("Message received:", message);
+
+    // Emit message to users in the same chat room
+    io.to(message.chatId).emit("receiveMessage", message);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("User Disconnected:", socket.id);
   });
 });
 
@@ -196,17 +166,62 @@ app.post("/group", async (req, res) => {
 });
 
 //Send Message
+// app.post("/api/chat/message", async (req, res) => {
+//   const { sender, content, chatId } = req.body;
+
+//   const message = await Message.create({ sender, content, chat: chatId });
+//   await Chat.findByIdAndUpdate(
+//     chatId,
+//     { $push: { messages: message._id } },
+//     { new: true, useFindAndModify: false }
+//   );
+
+//   res.json(message);
+// });
 app.post("/api/chat/message", async (req, res) => {
-  const { sender, content, chatId } = req.body;
+  try {
+    const { sender, content, chatId } = req.body;
 
-  const message = await Message.create({ sender, content, chat: chatId });
-  await Chat.findByIdAndUpdate(
-    chatId,
-    { $push: { messages: message._id } },
-    { new: true, useFindAndModify: false }
-  );
+    if (!sender || !content || !chatId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-  res.json(message);
+    // Create message
+    const message = await Message.create({ sender, content, chatId });
+
+    // Push message to Chat model
+    const chat = await Chat.findByIdAndUpdate(
+      chatId,
+      { $push: { messages: message._id } },
+      { new: true, useFindAndModify: false }
+    );
+
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    res.status(201).json(message);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+app.get("/api/chat/:chatId/messages", async (req, res) => {
+  try {
+    const chatId = req.params.chatId;
+
+    // Fetch all messages for this chat
+    const messages = await Message.find({ chatId }).populate(
+      "sender",
+      "name email"
+    );
+
+    res.json(messages);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching messages", error: error.message });
+  }
 });
 
 server.listen(5000, () => {

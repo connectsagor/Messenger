@@ -16,7 +16,10 @@ const Profile = () => {
   const [message, setMessage] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const [chatId, setChatId] = useState("");
+  const [loggedInUser, setLoggedInUser] = useState("");
+
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
+
   const currentUserId = loggedInuserNow.uid;
 
   const [modalIsOpen, setIsOpen] = React.useState(false);
@@ -52,6 +55,23 @@ const Profile = () => {
   //   };
   // }, [currentUserId]);
 
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/chat/${chatId}/messages`
+        );
+        setMessages(response.data);
+
+        console.log(response);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+
+    fetchMessages();
+  }, [chatId]);
+
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
       .then((res) => res.json())
@@ -61,17 +81,32 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const chatId = chatUser?.map((chatU) => chatU.uid);
-    socket.emit("joinChat", chatId);
+    if (!socket) return;
+
+    socket.emit("joinChat", chatId); // Join chat room when component loads
 
     socket.on("receiveMessage", (newMessage) => {
-      setMessages((prev) => [...prev, newMessage]);
+      console.log("New message received:", newMessage);
+      setMessages((prev) => [...prev, newMessage]); // Update UI with new message
     });
 
     return () => {
       socket.off("receiveMessage");
     };
-  }, [chatUser]);
+  }, [chatId]);
+
+  // useEffect(() => {
+  //   const chatId = chatUser?.map((chatU) => chatU.uid);
+  //   socket.emit("joinChat", chatId);
+
+  //   socket.on("receiveMessage", (newMessage) => {
+  //     setMessages((prev) => [...prev, newMessage]);
+  //   });
+
+  //   return () => {
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [chatUser]);
 
   // const sendMessage = (id) => {
   //   if (messageInput.trim() === "") return;
@@ -102,6 +137,23 @@ const Profile = () => {
       });
   }, []);
 
+  // const sendMessage = async () => {
+  //   if (!message.trim()) return;
+
+  //   const newMessage = {
+  //     sender: myData[0]?._id,
+  //     content: message,
+  //     chatId: chatId,
+  //   };
+  //   const data = await axios.post(
+  //     "http://localhost:5000/api/chat/message",
+  //     newMessage
+  //   );
+
+  //   socket.emit("sendMessage", newMessage);
+  //   setMessages((prev) => [...prev, data.data]);
+  //   setMessage("");
+  // };
   const sendMessage = async () => {
     if (!message.trim()) return;
 
@@ -110,11 +162,23 @@ const Profile = () => {
       content: message,
       chatId: chatId,
     };
-    await axios.post("http://localhost:5000/api/chat/message", newMessage);
 
-    socket.emit("sendMessage", newMessage);
-    setMessages((prev) => [...prev, newMessage]);
-    setMessage("");
+    try {
+      // Save message to database
+      const { data } = await axios.post(
+        "http://localhost:5000/api/chat/message",
+        newMessage
+      );
+
+      // Emit the saved message to all users in the chat
+      socket.emit("sendMessage", data);
+
+      // Update UI immediately
+      setMessages((prev) => [...prev, data]);
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   const handleCreateChat = async (user1, user2) => {
@@ -171,7 +235,6 @@ const Profile = () => {
               <div className="all-chat-user shadow-lg p-3 height-full">
                 {allUser &&
                   allUser.map((user, index) => {
-                    console.log(user);
                     return (
                       <div
                         key={index}
@@ -229,16 +292,19 @@ const Profile = () => {
                   <ScrollToBottom className="messages-container">
                     {messages && messages.length > 0 ? (
                       messages.map((message, index) => {
+                        console.log(message);
                         return (
                           <div
                             key={index}
                             className={`message ${
-                              message.senderId === currentUserId
+                              message.sender === myData[0]?._id
                                 ? "sent"
                                 : "received"
                             }`}
                           >
-                            <p>{message.content}</p>
+                            <p>
+                              {message.sender.name}: {message.content}
+                            </p>
                           </div>
                         );
                       })
