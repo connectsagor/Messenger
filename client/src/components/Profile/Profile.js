@@ -55,23 +55,6 @@ const Profile = () => {
   //   };
   // }, [currentUserId]);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:5000/api/chat/${chatId}/messages`
-        );
-        setMessages(response.data);
-
-        console.log(response);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      }
-    };
-
-    fetchMessages();
-  }, [chatId]);
-
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
       .then((res) => res.json())
@@ -154,26 +137,33 @@ const Profile = () => {
   //   setMessages((prev) => [...prev, data.data]);
   //   setMessage("");
   // };
+  useEffect(() => {
+    // Join chat when chatId changes
+    socket.emit("joinChat", chatId);
+
+    socket.on("receiveMessage", (newMessage) => {
+      setMessages((prev) => [...prev, newMessage]);
+    });
+
+    return () => {
+      socket.off("receiveMessage");
+    };
+  }, [chatId]);
+
   const sendMessage = async () => {
     if (!message.trim()) return;
 
     const newMessage = {
-      sender: myData[0]?._id,
+      sender: myData[0]._id, // Replace with actual sender's ID
       content: message,
       chatId: chatId,
     };
-
     try {
-      // Save message to database
       const { data } = await axios.post(
         "http://localhost:5000/api/chat/message",
         newMessage
       );
-
-      // Emit the saved message to all users in the chat
-      socket.emit("sendMessage", data);
-
-      // Update UI immediately
+      socket.emit("sendMessage", data); // Emit message after it's successfully saved
       setMessages((prev) => [...prev, data]);
       setMessage("");
     } catch (error) {

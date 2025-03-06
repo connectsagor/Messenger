@@ -9,6 +9,8 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 const { Server } = require("socket.io");
+const User = require("./models/UserModel");
+const Message = require("./models/MessageModel");
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -59,42 +61,6 @@ mongoose.connect(process.env.URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
-
-const UserSchema = new mongoose.Schema(
-  {
-    name: String,
-    email: String,
-    uid: String,
-    photo: { type: String, default: "" },
-    bio: String,
-    location: String,
-    phone: String,
-  },
-  { timestamps: true }
-);
-
-const chatSchema = new mongoose.Schema(
-  {
-    isGroupChat: { type: Boolean, default: false },
-    users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
-    groupName: { type: String, default: null },
-  },
-  { timestamps: true }
-);
-
-const messageSchema = new mongoose.Schema(
-  {
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    content: String,
-    chat: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
-  },
-  { timestamps: true }
-);
-
-const User = mongoose.model("User", UserSchema);
-const Chat = mongoose.model("Chat", chatSchema);
-const Message = mongoose.model("Message", messageSchema);
 
 app.post("/api/create-users", async (req, res) => {
   const userData = req.body;
