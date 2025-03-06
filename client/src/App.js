@@ -6,6 +6,7 @@ import { initializeApp } from "firebase/app";
 import { createContext, useEffect, useState } from "react";
 import Profile from "./components/Profile/Profile";
 import Chat from "./components/Chat/Chat";
+import { onlineUsers } from "./socket";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -26,6 +27,7 @@ function App() {
     return user ? user : null;
   });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [myData, setMyData] = useState(null);
 
   useEffect(() => {
     setIsLoggedIn(sessionStorage.getItem("isLoggedIn") === "true");
@@ -36,6 +38,7 @@ function App() {
       value={[
         { user, setUser },
         { isLoggedIn, setIsLoggedIn },
+        { myData, setMyData },
       ]}
     >
       <BrowserRouter>

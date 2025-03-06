@@ -3,11 +3,13 @@ import { Chat } from "react-bootstrap-icons";
 import { Link, useNavigate } from "react-router";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../App";
+import { connectSocket } from "../../socket";
 
 const SignUp = () => {
   const UserContextData = useContext(UserContext);
 
   const { isLoggedIn, setIsLoggedIn } = UserContextData[1];
+  const { myData, setMyData } = UserContextData[2];
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,8 +31,6 @@ const SignUp = () => {
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        setIsLoggedIn(true);
-        sessionStorage.setItem("user", JSON.stringify(user));
 
         fetch("http://localhost:5000/api/create-users", {
           method: "POST",
@@ -50,6 +50,8 @@ const SignUp = () => {
           .then((data) => {
             console.log(data);
           });
+        setIsLoggedIn(true);
+        sessionStorage.setItem("user", JSON.stringify(user));
         navigate("/");
       })
       .catch((error) => {

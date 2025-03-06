@@ -1,27 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { BellSlashFill, Chat, PersonCircle } from "react-bootstrap-icons";
 import ScrollToBottom from "react-scroll-to-bottom";
 import "./Profile.css";
-import io from "socket.io-client";
-import { useNavigate } from "react-router";
+
+import { useFetcher, useNavigate } from "react-router";
 import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
-import socket from "../../socket";
+import { UserContext } from "../../App";
+import { connectSocket } from "../../socket";
 
 const Profile = () => {
-  const [myData, setMyData] = useState(null);
+  const UserContextData = useContext(UserContext);
+
+  const { myData, setMyData } = UserContextData[2];
+
   const [allUser, setAllUser] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
-  const [messageInput, setMessageInput] = useState("");
-  const [chatId, setChatId] = useState("");
-  const [loggedInUser, setLoggedInUser] = useState("");
 
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
-
-  const currentUserId = loggedInuserNow.uid;
-
+  const currentUserId = loggedInuserNow?.uid;
   const [modalIsOpen, setIsOpen] = React.useState(false);
 
   function openModal() {
@@ -63,20 +62,20 @@ const Profile = () => {
       });
   };
 
-  useEffect(() => {
-    if (!socket) return;
+  // useEffect(() => {
+  //   if (!socket) return;
 
-    socket.emit("joinChat", chatId); // Join chat room when component loads
+  //   socket.emit("joinChat", chatId); // Join chat room when component loads
 
-    socket.on("receiveMessage", (newMessage) => {
-      console.log("New message received:", newMessage);
-      setMessages((prev) => [...prev, newMessage]); // Update UI with new message
-    });
+  //   socket.on("receiveMessage", (newMessage) => {
+  //     console.log("New message received:", newMessage);
+  //     setMessages((prev) => [...prev, newMessage]);
+  //   });
 
-    return () => {
-      socket.off("receiveMessage");
-    };
-  }, [chatId]);
+  //   return () => {
+  //     socket.off("receiveMessage");
+  //   };
+  // }, [chatId]);
 
   // useEffect(() => {
   //   const chatId = chatUser?.map((chatU) => chatU.uid);
@@ -117,44 +116,36 @@ const Profile = () => {
       .then((res) => res.json())
       .then((data) => {
         setMyData(data.user);
+        connectSocket(data.user[0]?._id);
       });
   }, []);
 
-  // const sendMessage = async () => {
-  //   if (!message.trim()) return;
+  // useEffect(() => {
+  //   // Join chat when chatId changes
+  //   socket.emit("joinChat", 1);
 
-  //   const newMessage = {
-  //     sender: myData[0]?._id,
-  //     content: message,
-  //     chatId: chatId,
+  //   socket.on("receiveMessage", (newMessage) => {
+  //     setMessages((prev) => [...prev, newMessage]);
+  //   });
+
+  //   return () => {
+  //     socket.off("receiveMessage");
   //   };
-  //   const data = await axios.post(
-  //     "http://localhost:5000/api/chat/message",
-  //     newMessage
-  //   );
-
-  //   socket.emit("sendMessage", newMessage);
-  //   setMessages((prev) => [...prev, data.data]);
-  //   setMessage("");
-  // };
+  // }, [chatId]);
   useEffect(() => {
-    // Join chat when chatId changes
-    socket.emit("joinChat", chatUser[0]._id);
-
-    socket.on("receiveMessage", (newMessage) => {
-      setMessages((prev) => [...prev, newMessage]);
-    });
-
-    return () => {
-      socket.off("receiveMessage");
-    };
-  }, [chatId]);
+    fetch("http://localhost:5000/api/get-messages")
+      .then((res) => res.json())
+      .then((data) => {
+        setMessages(data.messages);
+      })
+      .catch((error) => console.error("Error fetching messages:", error));
+  }, []);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
 
     const newMessage = {
-      sender: myData[0]._id, // Replace with actual sender's ID
+      sender: myData[0]._id,
       receiver: chatUser[0]._id,
       text: message,
     };
@@ -163,13 +154,15 @@ const Profile = () => {
         "http://localhost:5000/api/chat/message",
         newMessage
       );
-      socket.emit("sendMessage", data); // Emit message after it's successfully saved
+      // socket.emit("sendMessage", data); // Emit message after it's successfully saved
       setMessages((prev) => [...prev, data]);
       setMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
+
+  console.log(messages);
 
   return (
     <div className="profile">
@@ -269,11 +262,16 @@ const Profile = () => {
               <div className="middle-box">
                 <div className="message-box shadow-lg p-3">
                   <ScrollToBottom className="messages-container">
-                    {messages && messages.length > 0 ? (
+                    {messages &&
+                    messages.length > 0 &&
+                    myData?.[0]?._id &&
+                    chatUser?.[0]?._id ? (
                       messages.map((message, index) => {
                         if (
-                          message.sender === myData[0]._id &&
-                          chatUser[0]._id === message.receiver
+                          (message.sender === myData[0]._id &&
+                            message.receiver === chatUser[0]._id) ||
+                          (message.sender === chatUser[0]._id &&
+                            message.receiver === myData[0]._id)
                         ) {
                           return (
                             <div
@@ -288,6 +286,7 @@ const Profile = () => {
                             </div>
                           );
                         }
+                        return null;
                       })
                     ) : (
                       <p className="text-center">No messages yet</p>

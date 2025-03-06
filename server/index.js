@@ -3,14 +3,12 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 require("dotenv").config();
-const http = require("http");
 const multer = require("multer");
 const path = require("path");
-const app = express();
-const server = http.createServer(app);
-const { Server } = require("socket.io");
+
 const User = require("./models/UserModel.js");
 const Message = require("./models/MessageModel.js");
+const { app, server, io } = require("./Lib/socket.js");
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -26,35 +24,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
-  },
-});
-
-io.on("connection", (socket) => {
-  console.log(`User Connected: ${socket.id}`);
-
-  // User joins a chat room
-  socket.on("joinChat", (receiverId) => {
-    socket.join(receiverId);
-    console.log(`User joined chat: ${receiverId}`);
-  });
-
-  // When a message is sent
-  socket.on("sendMessage", (message) => {
-    console.log("Message received:", message);
-
-    // Emit message to users in the same chat room
-    io.to().emit("receiveMessage", message);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User Disconnected:", socket.id);
-  });
-});
 
 mongoose.connect(process.env.URI, {
   useNewUrlParser: true,
@@ -122,6 +91,12 @@ app.post("/api/chat/message", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
+});
+
+app.get("/api/get-messages", async (req, res) => {
+  const messages = await Message.find({});
+
+  res.status(201).json({ message: "fetched successfully", messages: messages });
 });
 
 server.listen(5000, () => {

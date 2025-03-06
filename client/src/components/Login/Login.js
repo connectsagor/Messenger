@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Chat } from "react-bootstrap-icons";
 
 import "./Login.css";
@@ -10,6 +10,8 @@ const Login = () => {
   const UserContextData = useContext(UserContext);
 
   const { isLoggedIn, setIsLoggedIn } = UserContextData[1];
+  const { myData, setMyData } = UserContextData[2];
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +25,7 @@ const Login = () => {
         const user = userCredential.user;
         sessionStorage.setItem("user", JSON.stringify(user));
         setIsLoggedIn(true);
+
         navigate("/");
       })
       .catch((error) => {
@@ -32,6 +35,8 @@ const Login = () => {
         const errorMessage = error.message;
       });
   };
+
+  useEffect(() => {}, []);
   return (
     <div className="login">
       <Chat className=" display-6 logo" />
