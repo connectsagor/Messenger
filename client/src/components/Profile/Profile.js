@@ -139,7 +139,7 @@ const Profile = () => {
   // };
   useEffect(() => {
     // Join chat when chatId changes
-    socket.emit("joinChat", chatId);
+    socket.emit("joinChat", chatUser[0]._id);
 
     socket.on("receiveMessage", (newMessage) => {
       setMessages((prev) => [...prev, newMessage]);
@@ -155,8 +155,8 @@ const Profile = () => {
 
     const newMessage = {
       sender: myData[0]._id, // Replace with actual sender's ID
-      content: message,
-      chatId: chatId,
+      receiver: chatUser[0]._id,
+      text: message,
     };
     try {
       const { data } = await axios.post(
@@ -169,15 +169,6 @@ const Profile = () => {
     } catch (error) {
       console.error("Error sending message:", error);
     }
-  };
-
-  const handleCreateChat = async (user1, user2) => {
-    handleGetUser(user2);
-    const response = await axios.post("http://localhost:5000/api/one-to-one", {
-      user1,
-      user2,
-    });
-    setChatId(response.data._id);
   };
 
   return (
@@ -228,9 +219,7 @@ const Profile = () => {
                     return (
                       <div
                         key={index}
-                        onClick={() =>
-                          handleCreateChat(myData[0]._id, user._id)
-                        }
+                        onClick={() => handleGetUser(user._id)}
                         className="users d-flex gap-3 my-4"
                       >
                         <div className="user-profile">
@@ -282,21 +271,23 @@ const Profile = () => {
                   <ScrollToBottom className="messages-container">
                     {messages && messages.length > 0 ? (
                       messages.map((message, index) => {
-                        console.log(message);
-                        return (
-                          <div
-                            key={index}
-                            className={`message ${
-                              message.sender === myData[0]?._id
-                                ? "sent"
-                                : "received"
-                            }`}
-                          >
-                            <p>
-                              {message.sender.name}: {message.content}
-                            </p>
-                          </div>
-                        );
+                        if (
+                          message.sender === myData[0]._id &&
+                          chatUser[0]._id === message.receiver
+                        ) {
+                          return (
+                            <div
+                              key={index}
+                              className={`message ${
+                                message.sender === myData[0]?._id
+                                  ? "sent"
+                                  : "received"
+                              }`}
+                            >
+                              <p>{message.text}</p>
+                            </div>
+                          );
+                        }
                       })
                     ) : (
                       <p className="text-center">No messages yet</p>
