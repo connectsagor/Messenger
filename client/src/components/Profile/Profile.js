@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { BellSlashFill, Chat, PersonCircle } from "react-bootstrap-icons";
 import ScrollToBottom from "react-scroll-to-bottom";
 import "./Profile.css";
-
+import { socket } from "../../socket";
 import { useFetcher, useNavigate } from "react-router";
 import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
@@ -62,20 +62,18 @@ const Profile = () => {
       });
   };
 
-  // useEffect(() => {
-  //   if (!socket) return;
+  useEffect(() => {
+    if (!socket) return;
 
-  //   socket.emit("joinChat", chatId); // Join chat room when component loads
+    socket.on("newMessage", (newMessage) => {
+      console.log("New message received:", newMessage);
+      setMessages((prev) => [...prev, newMessage]);
+    });
 
-  //   socket.on("receiveMessage", (newMessage) => {
-  //     console.log("New message received:", newMessage);
-  //     setMessages((prev) => [...prev, newMessage]);
-  //   });
-
-  //   return () => {
-  //     socket.off("receiveMessage");
-  //   };
-  // }, [chatId]);
+    return () => {
+      socket.off("newMessage");
+    };
+  }, [chatUser, myData, messages]);
 
   // useEffect(() => {
   //   const chatId = chatUser?.map((chatU) => chatU.uid);

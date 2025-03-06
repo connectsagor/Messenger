@@ -8,7 +8,7 @@ const path = require("path");
 
 const User = require("./models/UserModel.js");
 const Message = require("./models/MessageModel.js");
-const { app, server, io } = require("./Lib/socket.js");
+const { app, server, io, getReceiverSocketId } = require("./Lib/socket.js");
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -87,6 +87,9 @@ app.post("/api/chat/message", async (req, res) => {
       return res.status(400).json({ message: "Message not sent!" });
     }
 
+    const receiverSocketId = getReceiverSocketId(receiver);
+
+    io.to(receiverSocketId).emit("newMessage", message);
     res.status(201).json(message);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
