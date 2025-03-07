@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Chat } from "react-bootstrap-icons";
-
+import toast from "react-hot-toast";
 import "./Login.css";
 import { Link, useNavigate } from "react-router";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
@@ -25,12 +25,12 @@ const Login = () => {
         const user = userCredential.user;
         sessionStorage.setItem("user", JSON.stringify(user));
         setIsLoggedIn(true);
-
+        toast.success("Successfully logged in");
         navigate("/");
       })
       .catch((error) => {
         setIsLoggedIn(false);
-
+        toast.error("Email or Password is not correct!");
         const errorCode = error.code;
         const errorMessage = error.message;
       });

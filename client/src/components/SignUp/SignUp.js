@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../App";
 import { connectSocket } from "../../socket";
+import toast from "react-hot-toast";
 
 const SignUp = () => {
   const UserContextData = useContext(UserContext);
@@ -52,10 +53,12 @@ const SignUp = () => {
           });
         setIsLoggedIn(true);
         sessionStorage.setItem("user", JSON.stringify(user));
+        toast.success("Account is created.");
         navigate("/");
       })
       .catch((error) => {
         setIsLoggedIn(false);
+        toast.error("Something went wrong");
         const errorCode = error.code;
         const errorMessage = error.message;
         // ..

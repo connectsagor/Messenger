@@ -7,6 +7,7 @@ import { createContext, useEffect, useState } from "react";
 import Profile from "./components/Profile/Profile";
 
 import { onlineUsers } from "./socket";
+import { Toaster } from "react-hot-toast";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -52,6 +53,7 @@ function App() {
           <Route exact path="/sign-up" element={<SignUp />}></Route>
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </UserContext.Provider>
   );
 }
