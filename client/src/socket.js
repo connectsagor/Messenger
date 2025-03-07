@@ -11,9 +11,12 @@ export const connectSocket = function (id) {
   socket.connect();
 
   socket.on("onlineUsers", (userIds) => {
-    onlineUsers.push(userIds);
+    if (!onlineUsers.includes(userIds)) {
+      onlineUsers.push(userIds);
+    }
   });
 };
 
+console.log(onlineUsers);
 export { socket };
 export const disconnectSocket = function () {};

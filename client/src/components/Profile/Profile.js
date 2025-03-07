@@ -1,9 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
-import { BellSlashFill, Chat, PersonCircle } from "react-bootstrap-icons";
+import {
+  BellSlashFill,
+  Chat,
+  Dot,
+  Person,
+  PersonCircle,
+} from "react-bootstrap-icons";
 import ScrollToBottom from "react-scroll-to-bottom";
 import "./Profile.css";
 import { socket } from "../../socket";
-import { useFetcher, useNavigate } from "react-router";
 import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
 import { UserContext } from "../../App";
@@ -11,9 +16,8 @@ import { connectSocket } from "../../socket";
 
 const Profile = () => {
   const UserContextData = useContext(UserContext);
-
   const { myData, setMyData } = UserContextData[2];
-
+  const { onlineUsers } = UserContextData[3];
   const [allUser, setAllUser] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -39,21 +43,6 @@ const Profile = () => {
     }
   };
 
-  // useEffect(() => {
-  //   socket = io("http://localhost:5000");
-  //   // Register user when component loads
-  //   socket.emit("registerUser", currentUserId);
-
-  //   // Listen for incoming messages
-  //   socket.on("receiveMessage", (data) => {
-  //     setMessages((prev) => [...prev, data]);
-  //   });
-
-  //   return () => {
-  //     socket.off("receiveMessage");
-  //   };
-  // }, [currentUserId]);
-
   const handleGetUser = (id) => {
     fetch(`http://localhost:5000/api/get-user?id=${id}`)
       .then((res) => res.json())
@@ -62,11 +51,13 @@ const Profile = () => {
       });
   };
 
+  console.log(onlineUsers);
+
   useEffect(() => {
     if (!socket) return;
 
     socket.on("newMessage", (newMessage) => {
-      console.log("New message received:", newMessage);
+      // console.log("New message received:", newMessage);
       setMessages((prev) => [...prev, newMessage]);
     });
 
@@ -74,30 +65,6 @@ const Profile = () => {
       socket.off("newMessage");
     };
   }, [chatUser, myData, messages]);
-
-  // useEffect(() => {
-  //   const chatId = chatUser?.map((chatU) => chatU.uid);
-  //   socket.emit("joinChat", chatId);
-
-  //   socket.on("receiveMessage", (newMessage) => {
-  //     setMessages((prev) => [...prev, newMessage]);
-  //   });
-
-  //   return () => {
-  //     socket.off("receiveMessage");
-  //   };
-  // }, [chatUser]);
-
-  // const sendMessage = (id) => {
-  //   if (messageInput.trim() === "") return;
-
-  //   socket.emit("sendMessage", {
-  //     senderId: currentUserId,
-  //     receiverId: id,
-  //     text: messageInput,
-  //   });
-  //   setMessageInput("");
-  // };
 
   useEffect(() => {
     fetch("http://localhost:5000/api/get-users?currentUserId=" + currentUserId)
@@ -118,18 +85,6 @@ const Profile = () => {
       });
   }, []);
 
-  // useEffect(() => {
-  //   // Join chat when chatId changes
-  //   socket.emit("joinChat", 1);
-
-  //   socket.on("receiveMessage", (newMessage) => {
-  //     setMessages((prev) => [...prev, newMessage]);
-  //   });
-
-  //   return () => {
-  //     socket.off("receiveMessage");
-  //   };
-  // }, [chatId]);
   useEffect(() => {
     fetch("http://localhost:5000/api/get-messages")
       .then((res) => res.json())
@@ -159,8 +114,6 @@ const Profile = () => {
       console.error("Error sending message:", error);
     }
   };
-
-  console.log(messages);
 
   return (
     <div className="profile">
@@ -211,22 +164,37 @@ const Profile = () => {
                       <div
                         key={index}
                         onClick={() => handleGetUser(user._id)}
-                        className="users d-flex gap-3 my-4"
+                        className="users d-flex gap-3 my-4 shadow-lg p-2 rounded-2"
                       >
                         <div className="user-profile">
                           {user.photo ? (
-                            <img
-                              className="display-pic"
-                              src={`http://localhost:5000/uploads/${user.photo}`}
-                              alt="user"
-                            />
+                            <div className="d-flex position-relative active-parent">
+                              <img
+                                className="display-pic shadow-lg"
+                                src={`http://localhost:5000/uploads/${user.photo}`}
+                                alt="user"
+                              />
+
+                              {onlineUsers[0]?.includes(user._id) ? (
+                                <p className="">
+                                  {" "}
+                                  <Dot className="text-success position-absolute active-child" />{" "}
+                                </p>
+                              ) : (
+                                ""
+                              )}
+                            </div>
                           ) : (
                             <PersonCircle className="m-0 display-6" />
                           )}
                         </div>
                         <div className="user-info">
                           <h6 className="m-0">{user.name}</h6>
-                          <p>Online now</p>
+                          {onlineUsers[0]?.includes(user._id) ? (
+                            <p className="">Online</p>
+                          ) : (
+                            <p>Ofline</p>
+                          )}
                         </div>
                       </div>
                     );
@@ -252,7 +220,12 @@ const Profile = () => {
                     </div>
                     <div className="user-chat-info">
                       <h5 className="m-0">{chatUser[0]?.name}</h5>
-                      <p>Online</p>
+
+                      {onlineUsers[0]?.includes(chatUser[0]?._id) ? (
+                        <p>Active Now</p>
+                      ) : (
+                        <p>Ofline</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -287,7 +260,12 @@ const Profile = () => {
                         return null;
                       })
                     ) : (
-                      <p className="text-center">No messages yet</p>
+                      <div className="d-flex h-100 justify-content-center gap-3 align-items-center">
+                        <Person className="display-6" />
+                        <p className="text-center m-0 secondary">
+                          Select User to chat..
+                        </p>
+                      </div>
                     )}
                   </ScrollToBottom>
                 </div>

@@ -5,7 +5,7 @@ import SignUp from "./components/SignUp/SignUp";
 import { initializeApp } from "firebase/app";
 import { createContext, useEffect, useState } from "react";
 import Profile from "./components/Profile/Profile";
-import Chat from "./components/Chat/Chat";
+
 import { onlineUsers } from "./socket";
 
 const firebaseConfig = {
@@ -39,6 +39,7 @@ function App() {
         { user, setUser },
         { isLoggedIn, setIsLoggedIn },
         { myData, setMyData },
+        { onlineUsers },
       ]}
     >
       <BrowserRouter>
