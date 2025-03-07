@@ -1,5 +1,5 @@
-import React, { useContext, useState } from "react";
-import { XCircle, PersonCircle } from "react-bootstrap-icons";
+import React, { useState } from "react";
+import { XCircle } from "react-bootstrap-icons";
 
 import Modal from "react-modal";
 
