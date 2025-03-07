@@ -1,9 +1,7 @@
 import React, { useContext, useState } from "react";
-import { X, XCircle, PersonCircle } from "react-bootstrap-icons";
+import { XCircle, PersonCircle } from "react-bootstrap-icons";
 
-import ReactDOM from "react-dom";
 import Modal from "react-modal";
-import { UserContext } from "../../App";
 
 const customStyles = {
   content: {

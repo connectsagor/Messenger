@@ -13,6 +13,7 @@ import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
 import { UserContext } from "../../App";
 import { connectSocket } from "../../socket";
+import UserInfo from "../UserInfo/UserInfo";
 
 const Profile = () => {
   const UserContextData = useContext(UserContext);
@@ -25,7 +26,8 @@ const Profile = () => {
 
   const loggedInuserNow = JSON.parse(sessionStorage.getItem("user"));
   const currentUserId = loggedInuserNow?.uid;
-  const [modalIsOpen, setIsOpen] = React.useState(false);
+  const [modalIsOpen, setIsOpen] = useState(false);
+  const [isUserOpen, setUserOpen] = useState(false);
 
   function openModal() {
     setIsOpen(true);
@@ -35,11 +37,25 @@ const Profile = () => {
     setIsOpen(false);
   }
 
+  function openUser() {
+    setUserOpen(true);
+  }
+
+  function closeUser() {
+    setUserOpen(false);
+  }
   const handleShowProfile = () => {
     if (modalIsOpen) {
       closeModal();
     } else {
       openModal();
+    }
+  };
+  const handleGetProfile = () => {
+    if (isUserOpen) {
+      closeUser();
+    } else {
+      openUser();
     }
   };
 
@@ -50,8 +66,6 @@ const Profile = () => {
         setChatUser(data.user);
       });
   };
-
-  console.log(onlineUsers);
 
   useEffect(() => {
     if (!socket) return;
@@ -64,7 +78,7 @@ const Profile = () => {
     return () => {
       socket.off("newMessage");
     };
-  }, [chatUser, myData, messages]);
+  }, [chatUser, myData, messages, onlineUsers]);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/get-users?currentUserId=" + currentUserId)
@@ -107,7 +121,7 @@ const Profile = () => {
         "http://localhost:5000/api/chat/message",
         newMessage
       );
-      // socket.emit("sendMessage", data); // Emit message after it's successfully saved
+
       setMessages((prev) => [...prev, data]);
       setMessage("");
     } catch (error) {
@@ -140,14 +154,14 @@ const Profile = () => {
               {myData ? (
                 <img
                   onClick={handleShowProfile}
-                  className="display-pic"
+                  className="display-pic my-profile"
                   src={`http://localhost:5000/uploads/${myData[0]?.photo}`}
                   alt="user"
                 />
               ) : (
                 <PersonCircle
                   onClick={handleShowProfile}
-                  className="display-6"
+                  className="display-6 my-profile"
                 />
               )}
             </div>
@@ -164,7 +178,7 @@ const Profile = () => {
                       <div
                         key={index}
                         onClick={() => handleGetUser(user._id)}
-                        className="users d-flex gap-3 my-4 shadow-lg p-2 rounded-2"
+                        className="users d-flex gap-3 my-4 shadow-lg p-2 rounded-2 "
                       >
                         <div className="user-profile">
                           {user.photo ? (
@@ -206,7 +220,10 @@ const Profile = () => {
             <div className="chat-box shadow-lg p-3 height-full">
               <div className="top-box user-chat-box shadow-sm ">
                 {chatUser && (
-                  <div className="chat-header d-flex gap-3">
+                  <div
+                    onClick={handleGetProfile}
+                    className="chat-header d-flex gap-3"
+                  >
                     <div className="user-chat-box-img">
                       {chatUser[0]?.photo ? (
                         <img
@@ -328,6 +345,17 @@ const Profile = () => {
                     </div>
                   </div>
                 )
+              )}
+
+              {isUserOpen ? (
+                <UserInfo
+                  openUser={openUser}
+                  closeUser={closeUser}
+                  isUserOpen={isUserOpen}
+                  chatUser={chatUser}
+                />
+              ) : (
+                ""
               )}
             </div>
           </div>

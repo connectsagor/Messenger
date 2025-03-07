@@ -25,20 +25,6 @@ io.on("connection", (socket) => {
 
   io.emit("onlineUsers", Object.keys(userSocketMap));
 
-  // User joins a chat room
-  socket.on("joinChat", (receiverId) => {
-    socket.join(receiverId);
-    console.log(`User joined chat: ${receiverId}`);
-  });
-
-  // When a message is sent
-  socket.on("sendMessage", (message) => {
-    console.log("Message received:", message);
-
-    // Emit message to users in the same chat room
-    io.to().emit("receiveMessage", message);
-  });
-
   socket.on("disconnect", () => {
     delete userSocketMap[userId];
     io.emit("onlineUsers", Object.keys(userSocketMap));

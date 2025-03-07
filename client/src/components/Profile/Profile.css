@@ -41,6 +41,9 @@
   word-wrap: break-word;
 }
 
+.users {
+  cursor: pointer;
+}
 .sent {
   background: linear-gradient(
     to right,
@@ -92,4 +95,9 @@
   top: 75%;
   transform: translate(50%, -50%);
   font-size: 50px;
+}
+
+.chat-header,
+.my-profile {
+  cursor: pointer;
 }

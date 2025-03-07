@@ -9,6 +9,7 @@ const path = require("path");
 const User = require("./models/UserModel.js");
 const Message = require("./models/MessageModel.js");
 const { app, server, io, getReceiverSocketId } = require("./Lib/socket.js");
+
 app.use(cors());
 app.use(bodyParser.json());
 
