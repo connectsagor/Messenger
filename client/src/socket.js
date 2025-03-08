@@ -17,6 +17,5 @@ export const connectSocket = function (id) {
   });
 };
 
-console.log(onlineUsers);
 export { socket };
 export const disconnectSocket = function () {};
